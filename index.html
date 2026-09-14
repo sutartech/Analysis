@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IndiaMarket Pro - Stock & MF Analysis</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif; background: #f5f7fa; color: #1a1a1a; line-height: 1.5; }
+    a { color: #0066cc; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .badge-live { display: inline-block; padding: 3px 6px; background: #10b981; color: white; border-radius: 3px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+  </style>
+</helmet>
+
+<header style="background: white; border-bottom: 1px solid #e5e7eb; sticky: top; z-index: 100; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+  <div style="max-width: 1600px; margin: 0 auto; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="font-size: 22px; font-weight: 800; background: linear-gradient(135deg, #0066cc, #0052a3); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">IndiaMarket Pro</div>
+      <span class="badge-live">LIVE</span>
+    </div>
+    <div style="display: flex; gap: 12px; align-items: center;">
+      <sc-if value="{{ isLoggedIn }}" hint-placeholder-val="{{ false }}">
+        <span style="font-size: 13px; color: #666;">{{ userEmail }}</span>
+        <button onClick="{{ () => toggleAdminMode() }}" style="padding: 8px 16px; background: {{ adminMode ? '#667eea' : '#f0f0f0' }}; color: {{ adminMode ? 'white' : '#1a1a1a' }}; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px;">⚙️ Admin</button>
+        <button onClick="{{ () => handleLogout() }}" style="padding: 8px 16px; background: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px;">Logout</button>
+      </sc-if>
+    </div>
+  </div>
+</header>
+
+<section style="background: white; border-bottom: 1px solid #e5e7eb;">
+  <div style="max-width: 1600px; margin: 0 auto; padding: 20px;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+      <div style="padding: 16px; background: linear-gradient(135deg, #f0f9ff, #e0f2fe); border-radius: 8px; border-left: 4px solid #0066cc;">
+        <div style="font-size: 11px; color: #0066cc; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px;">Market Status</div>
+        <div style="font-size: 24px; font-weight: 800; color: #1a1a1a;">{{ marketStatus }}</div>
+        <div style="font-size: 12px; color: #666; margin-top: 6px;">NSE • Updated 2 min ago</div>
+      </div>
+      <div style="padding: 16px; background: linear-gradient(135deg, #f0fdf4, #dcfce7); border-radius: 8px; border-left: 4px solid #10b981;">
+        <div style="font-size: 11px; color: #10b981; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px;">📈 Gainers</div>
+        <div style="font-size: 24px; font-weight: 800; color: #10b981;">{{ gainersCount }}</div>
+        <div style="font-size: 12px; color: #666; margin-top: 6px;">Today's movers</div>
+      </div>
+      <div style="padding: 16px; background: linear-gradient(135deg, #fef2f2, #fee2e2); border-radius: 8px; border-left: 4px solid #ef4444;">
+        <div style="font-size: 11px; color: #ef4444; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px;">📉 Losers</div>
+        <div style="font-size: 24px; font-weight: 800; color: #ef4444;">{{ losersCount }}</div>
+        <div style="font-size: 12px; color: #666; margin-top: 6px;">Under pressure</div>
+      </div>
+      <div style="padding: 16px; background: linear-gradient(135deg, #fef3c7, #fcd34d); border-radius: 8px; border-left: 4px solid #f59e0b;">
+        <div style="font-size: 11px; color: #d97706; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px;">⭐ Top MF (YTD)</div>
+        <div style="font-size: 24px; font-weight: 800; color: #f59e0b;">{{ topMFReturn }}</div>
+        <div style="font-size: 12px; color: #666; margin-top: 6px;">Best performer</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="background: white; border-bottom: 2px solid #e5e7eb;">
+  <div style="max-width: 1600px; margin: 0 auto; display: flex; gap: 0; padding: 0 20px;">
+    <button onClick="{{ () => setTab('screener') }}" style="padding: 16px 20px; background: {{ activeTab === 'screener' ? '#0066cc' : 'transparent' }}; color: {{ activeTab === 'screener' ? 'white' : '#666' }}; border: none; cursor: pointer; font-weight: 600; border-bottom: 3px solid {{ activeTab === 'screener' ? '#0066cc' : 'transparent' }}; font-size: 14px;">Screener</button>
+    <button onClick="{{ () => setTab('details') }}" style="padding: 16px 20px; background: {{ activeTab === 'details' ? '#0066cc' : 'transparent' }}; color: {{ activeTab === 'details' ? 'white' : '#666' }}; border: none; cursor: pointer; font-weight: 600; border-bottom: 3px solid {{ activeTab === 'details' ? '#0066cc' : 'transparent' }}; font-size: 14px;">📊 Stock Details</button>
+    <button onClick="{{ () => setTab('bookmarks') }}" style="padding: 16px 20px; background: {{ activeTab === 'bookmarks' ? '#0066cc' : 'transparent' }}; color: {{ activeTab === 'bookmarks' ? 'white' : '#666' }}; border: none; cursor: pointer; font-weight: 600; border-bottom: 3px solid {{ activeTab === 'bookmarks' ? '#0066cc' : 'transparent' }}; font-size: 14px;">📌 Bookmarks ({{ bookmarkCount }})</button>
+    <sc-if value="{{ adminMode }}" hint-placeholder-val="{{ false }}">
+      <button onClick="{{ () => setTab('admin') }}" style="padding: 16px 20px; background: {{ activeTab === 'admin' ? '#667eea' : 'transparent' }}; color: {{ activeTab === 'admin' ? 'white' : '#666' }}; border: none; cursor: pointer; font-weight: 600; border-bottom: 3px solid {{ activeTab === 'admin' ? '#667eea' : 'transparent' }}; font-size: 14px; margin-left: auto;">⚙️ Dashboard Settings</button>
+    </sc-if>
+  </div>
+</section>
+
+<section style="flex: 1; padding: 24px 20px; background: #f5f7fa;">
+  <div style="max-width: 1600px; margin: 0 auto;">
+    <!-- Screener Tab -->
+    <sc-if value="{{ activeTab === 'screener' }}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; gap: 20px; margin-bottom: 20px;">
+        <input type="text" placeholder="Search symbol or company..." onChange="{{ (e) => setSearchTerm(e.target.value) }}" style="flex: 1; padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px;" />
+        <select onChange="{{ (e) => setSortBy(e.target.value) }}" style="padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px;">
+          <option value="rating">Top Rated</option>
+          <option value="return">Best Returns (YTD)</option>
+          <option value="momentum">Hot Movers</option>
+        </select>
+      </div>
+      <div style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+          <thead>
+            <tr style="background: #f8f9fa; border-bottom: 2px solid #e0e0e0;">
+              <th style="padding: 14px 16px; text-align: left; font-weight: 700;">Symbol</th>
+              <th style="padding: 14px 16px; text-align: left; font-weight: 700;">Company</th>
+              <th style="padding: 14px 16px; text-align: right; font-weight: 700;">Price</th>
+              <th style="padding: 14px 16px; text-align: right; font-weight: 700;">Change</th>
+              <th style="padding: 14px 16px; text-align: center; font-weight: 700;">Rating</th>
+              <th style="padding: 14px 16px; text-align: right; font-weight: 700;">YTD</th>
+              <th style="padding: 14px 16px; text-align: center; font-weight: 700;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <sc-for list="{{ tableRows }}" as="row" hint-placeholder-count="5">
+              <tr style="border-bottom: 1px solid #f0f0f0; hover-background: #f8f9fa;">
+                <td style="padding: 12px 16px; font-weight: 700; color: #667eea;">{{ row.symbol }}</td>
+                <td style="padding: 12px 16px; color: #666;">{{ row.name }}</td>
+                <td style="padding: 12px 16px; text-align: right; font-weight: 600;">{{ row.priceStr }}</td>
+                <td style="padding: 12px 16px; text-align: right; font-weight: 600; color: {{ row.changeColor }};">{{ row.changeStr }}</td>
+                <td style="padding: 12px 16px; text-align: center;"><span style="display: inline-block; padding: 4px 10px; background: {{ row.ratingBg }}; color: {{ row.ratingColor }}; border-radius: 6px; font-weight: 700; font-size: 12px;">{{ row.ratingStr }}</span></td>
+                <td style="padding: 12px 16px; text-align: right; font-weight: 600; color: {{ row.ytdColor }};">{{ row.ytdStr }}</td>
+                <td style="padding: 12px 16px; text-align: center;"><button onClick="{{ (sym) => selectStock(sym) }}" style="padding: 6px 12px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 600;">View</button></td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+    </sc-if>
+
+    <!-- Stock Details Tab -->
+    <sc-if value="{{ activeTab === 'details' }}" hint-placeholder-val="{{ false }}">
+      <sc-if value="{{ selectedStock }}" hint-placeholder-val="{{ false }}">
+        <div style="background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px;">
+            <div>
+              <h2 style="font-size: 24px; font-weight: 800; margin-bottom: 4px;">{{ selectedStock.name }}</h2>
+              <div style="font-size: 12px; color: #666;">{{ selectedStock.symbol }} • {{ selectedStock.sector }} • Founded {{ selectedStock.founded }}</div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 28px; font-weight: 800;">₹{{ selectedStock.price }}</div>
+              <div style="font-size: 14px; color: {{ selectedStock.change > 0 ? '#10b981' : '#ef4444' }}; font-weight: 600;">{{ selectedStock.change > 0 ? '↑' : '↓' }} {{ selectedStock.change }}%</div>
+            </div>
+          </div>
+
+          <!-- Profit Metrics -->
+          <div style="margin-bottom: 24px;">
+            <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px;">📈 Profit Returns</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 12px;">
+              <sc-if value="{{ dashboardSettings.showProfit1d }}" hint-placeholder-val="{{ true }}">
+                <div style="padding: 12px; background: #f9f9f9; border-radius: 6px; text-align: center;">
+                  <div style="font-size: 11px; color: #666; font-weight: 600;">1 Day</div>
+                  <div style="font-size: 16px; font-weight: 700; color: {{ selectedStock.profit['1d'] > 0 ? '#10b981' : '#ef4444' }};">{{ selectedStock.profit['1d'] > 0 ? '+' : '' }}{{ selectedStock.profit['1d'] }}%</div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ dashboardSettings.showProfit7d }}" hint-placeholder-val="{{ true }}">
+                <div style="padding: 12px; background: #f9f9f9; border-radius: 6px; text-align: center;">
+                  <div style="font-size: 11px; color: #666; font-weight: 600;">7 Days</div>
+                  <div style="font-size: 16px; font-weight: 700; color: {{ selectedStock.profit['7d'] > 0 ? '#10b981' : '#ef4444' }};">{{ selectedStock.profit['7d'] > 0 ? '+' : '' }}{{ selectedStock.profit['7d'] }}%</div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ dashboardSettings.showProfit1m }}" hint-placeholder-val="{{ true }}">
+                <div style="padding: 12px; background: #f9f9f9; border-radius: 6px; text-align: center;">
+                  <div style="font-size: 11px; color: #666; font-weight: 600;">1 Month</div>
+                  <div style="font-size: 16px; font-weight: 700; color: {{ selectedStock.profit['1m'] > 0 ? '#10b981' : '#ef4444' }};">{{ selectedStock.profit['1m'] > 0 ? '+' : '' }}{{ selectedStock.profit['1m'] }}%</div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ dashboardSettings.showProfit3m }}" hint-placeholder-val="{{ true }}">
+                <div style="padding: 12px; background: #f9f9f9; border-radius: 6px; text-align: center;">
+                  <div style="font-size: 11px; color: #666; font-weight: 600;">3 Months</div>
+                  <div style="font-size: 16px; font-weight: 700; color: {{ selectedStock.profit['3m'] > 0 ? '#10b981' : '#ef4444' }};">{{ selectedStock.profit['3m'] > 0 ? '+' : '' }}{{ selectedStock.profit['3m'] }}%</div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ dashboardSettings.showProfit6m }}" hint-placeholder-val="{{ true }}">
+                <div style="padding: 12px; background: #f9f9f9; border-radius: 6px; text-align: center;">
+                  <div style="font-size: 11px; color: #666; font-weight: 600;">6 Months</div>
+                  <div style="font-size: 16px; font-weight: 700; color: {{ selectedStock.profit['6m'] > 0 ? '#10b981' : '#ef4444' }};">{{ selectedStock.profit['6m'] > 0 ? '+' : '' }}{{ selectedStock.profit['6m'] }}%</div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ dashboardSettings.showProfit1y }}" hint-placeholder-val="{{ true }}">
+                <div style="padding: 12px; background: #f9f9f9; border-radius: 6px; text-align: center;">
+                  <div style="font-size: 11px; color: #666; font-weight: 600;">1 Year</div>
+                  <div style="font-size: 16px; font-weight: 700; color: {{ selectedStock.profit['1y'] > 0 ? '#10b981' : '#ef4444' }};">{{ selectedStock.profit['1y'] > 0 ? '+' : '' }}{{ selectedStock.profit['1y'] }}%</div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ dashboardSettings.showProfit3y }}" hint-placeholder-val="{{ false }}">
+                <div style="padding: 12px; background: #f9f9f9; border-radius: 6px; text-align: center;">
+                  <div style="font-size: 11px; color: #666; font-weight: 600;">3 Years</div>
+                  <div style="font-size: 16px; font-weight: 700; color: {{ selectedStock.profit['3y'] > 0 ? '#10b981' : '#ef4444' }};">{{ selectedStock.profit['3y'] > 0 ? '+' : '' }}{{ selectedStock.profit['3y'] }}%</div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ dashboardSettings.showProfit5y }}" hint-placeholder-val="{{ false }}">
+                <div style="padding: 12px; background: #f9f9f9; border-radius: 6px; text-align: center;">
+                  <div style="font-size: 11px; color: #666; font-weight: 600;">5 Years</div>
+                  <div style="font-size: 16px; font-weight: 700; color: {{ selectedStock.profit['5y'] > 0 ? '#10b981' : '#ef4444' }};">{{ selectedStock.profit['5y'] > 0 ? '+' : '' }}{{ selectedStock.profit['5y'] }}%</div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ dashboardSettings.showProfit10y }}" hint-placeholder-val="{{ false }}">
+                <div style="padding: 12px; background: #f9f9f9; border-radius: 6px; text-align: center;">
+                  <div style="font-size: 11px; color: #666; font-weight: 600;">10 Years</div>
+                  <div style="font-size: 16px; font-weight: 700; color: {{ selectedStock.profit['10y'] > 0 ? '#10b981' : '#ef4444' }};">{{ selectedStock.profit['10y'] > 0 ? '+' : '' }}{{ selectedStock.profit['10y'] }}%</div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ dashboardSettings.showProfitInception }}" hint-placeholder-val="{{ false }}">
+                <div style="padding: 12px; background: #f9f9f9; border-radius: 6px; text-align: center;">
+                  <div style="font-size: 11px; color: #666; font-weight: 600;">Inception</div>
+                  <div style="font-size: 16px; font-weight: 700; color: {{ selectedStock.profit.inception > 0 ? '#10b981' : '#ef4444' }};">{{ selectedStock.profit.inception > 0 ? '+' : '' }}{{ selectedStock.profit.inception }}%</div>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+
+          <!-- Management & Growth -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <sc-if value="{{ dashboardSettings.showManagement }}" hint-placeholder-val="{{ false }}">
+              <div>
+                <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px;">👥 Management</h3>
+                <div style="font-size: 13px; color: #333; line-height: 1.6;">{{ selectedStock.management }}</div>
+                <div style="font-size: 12px; color: #999; margin-top: 8px;">Employees: {{ selectedStock.employees }}</div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ dashboardSettings.showGrowth }}" hint-placeholder-val="{{ false }}">
+              <div>
+                <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px;">📊 Growth</h3>
+                <div style="font-size: 13px; color: #333; line-height: 1.6;">{{ selectedStock.growth }}</div>
+                <div style="font-size: 12px; color: #999; margin-top: 8px;">Market Cap: {{ selectedStock.marketCap }}</div>
+              </div>
+            </sc-if>
+          </div>
+
+          <!-- 10 Growth Points -->
+          <sc-if value="{{ dashboardSettings.showFivePoints }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top: 20px;">
+              <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px;">🚀 Key Growth Drivers</h3>
+              <ul style="list-style: none; display: flex; flex-direction: column; gap: 8px;">
+                <sc-for list="{{ selectedStock.fivePointsGrowth }}" as="point" hint-placeholder-count="3">
+                  <li style="font-size: 13px; color: #333; padding-left: 20px; position: relative;">
+                    <span style="position: absolute; left: 0;">✓</span>{{ point }}
+                  </li>
+                </sc-for>
+              </ul>
+            </div>
+          </sc-if>
+
+          <button onClick="{{ () => setTab('screener') }}" style="margin-top: 20px; padding: 10px 20px; background: #f0f0f0; color: #1a1a1a; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">← Back to Screener</button>
+        </div>
+      </sc-if>
+    </sc-if>
+
+    <!-- Bookmarks Tab -->
+    <sc-if value="{{ activeTab === 'bookmarks' }}" hint-placeholder-val="{{ false }}">
+      <div style="background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+        <h2 style="font-size: 18px; font-weight: 700; margin-bottom: 20px;">🚀 Implementation & Setup Guide</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 24px;">
+          <div style="padding: 20px; background: #f0f9ff; border-left: 4px solid #0066cc; border-radius: 8px;">
+            <div style="font-size: 14px; font-weight: 700; color: #0066cc; margin-bottom: 8px;">Step 1: GitHub Setup</div>
+            <div style="font-size: 12px; color: #333; line-height: 1.6;">Create repo <code style="background: #fff; padding: 2px 6px; border-radius: 3px; font-family: monospace;">indian-stock-analysis</code>, add folder <code style="background: #fff; padding: 2px 6px; border-radius: 3px; font-family: monospace;">/data/stocks.json</code>, push this DC as <code style="background: #fff; padding: 2px 6px; border-radius: 3px; font-family: monospace;">index.html</code></div>
+          </div>
+          <div style="padding: 20px; background: #f0fdf4; border-left: 4px solid #10b981; border-radius: 8px;">
+            <div style="font-size: 14px; font-weight: 700; color: #10b981; margin-bottom: 8px;">Step 2: Google Apps Script</div>
+            <div style="font-size: 12px; color: #333; line-height: 1.6;">Visit <code style="background: #fff; padding: 2px 6px; border-radius: 3px; font-family: monospace;">script.google.com</code>, create project, add function to fetch stock data from APIs every 5 mins</div>
+          </div>
+          <div style="padding: 20px; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 8px;">
+            <div style="font-size: 14px; font-weight: 700; color: #d97706; margin-bottom: 8px;">Step 3: GitHub Token</div>
+            <div style="font-size: 12px; color: #333; line-height: 1.6;">Generate personal access token in GitHub Settings → Developer settings, add to Apps Script for API writes</div>
+          </div>
+          <div style="padding: 20px; background: #fee2e2; border-left: 4px solid #ef4444; border-radius: 8px;">
+            <div style="font-size: 14px; font-weight: 700; color: #ef4444; margin-bottom: 8px;">Step 4: Data Sources</div>
+            <div style="font-size: 12px; color: #333; line-height: 1.6;">Use NSE India API, yfinance, Rapid API, or Alpha Vantage (free tiers available)</div>
+          </div>
+          <div style="padding: 20px; background: #f3e8ff; border-left: 4px solid #667eea; border-radius: 8px;">
+            <div style="font-size: 14px; font-weight: 700; color: #667eea; margin-bottom: 8px;">Step 5: Auto-Schedule</div>
+            <div style="font-size: 12px; color: #333; line-height: 1.6;">In Google Apps Script, set trigger: <code style="background: #fff; padding: 2px 6px; border-radius: 3px; font-family: monospace;">fetchStockData</code> every 5 minutes</div>
+          </div>
+          <div style="padding: 20px; background: #ecfdf5; border-left: 4px solid #059669; border-radius: 8px;">
+            <div style="font-size: 14px; font-weight: 700; color: #059669; margin-bottom: 8px;">Step 6: Deploy</div>
+            <div style="font-size: 12px; color: #333; line-height: 1.6;">Enable GitHub Pages, deploy from root, live at <code style="background: #fff; padding: 2px 6px; border-radius: 3px; font-family: monospace;">yourusername.github.io/indian-stock-analysis</code></div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- Admin Dashboard Settings -->
+    <sc-if value="{{ activeTab === 'admin' }}" hint-placeholder-val="{{ false }}">
+      <div style="background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+        <h2 style="font-size: 18px; font-weight: 700; margin-bottom: 20px;">⚙️ Dashboard Customization</h2>
+        
+        <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; margin-top: 20px;">📈 Profit Metrics to Display</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+          <label style="display: flex; align-items: center; gap: 8px; padding: 12px; background: #f9f9f9; border-radius: 6px; cursor: pointer;"><input type="checkbox" checked="{{ dashboardSettings.showProfit1d }}" onChange="{{ () => toggleDashboardSetting('showProfit1d') }}" /> 1 Day Return</label>
+          <label style="display: flex; align-items: center; gap: 8px; padding: 12px; background: #f9f9f9; border-radius: 6px; cursor: pointer;"><input type="checkbox" checked="{{ dashboardSettings.showProfit7d }}" onChange="{{ () => toggleDashboardSetting('showProfit7d') }}" /> 7 Days Return</label>
+          <label style="display: flex; align-items: center; gap: 8px; padding: 12px; background: #f9f9f9; border-radius: 6px; cursor: pointer;"><input type="checkbox" checked="{{ dashboardSettings.showProfit1m }}" onChange="{{ () => toggleDashboardSetting('showProfit1m') }}" /> 1 Month Return</label>
+          <label style="display: flex; align-items: center; gap: 8px; padding: 12px; background: #f9f9f9; border-radius: 6px; cursor: pointer;"><input type="checkbox" checked="{{ dashboardSettings.showProfit3m }}" onChange="{{ () => toggleDashboardSetting('showProfit3m') }}" /> 3 Months Return</label>
+          <label style="display: flex; align-items: center; gap: 8px; padding: 12px; background: #f9f9f9; border-radius: 6px; cursor: pointer;"><input type="checkbox" checked="{{ dashboardSettings.showProfit6m }}" onChange="{{ () => toggleDashboardSetting('showProfit6m') }}" /> 6 Months Return</label>
+          <label style="display: flex; align-items: center; gap: 8px; padding: 12px; background: #f9f9f9; border-radius: 6px; cursor: pointer;"><input type="checkbox" checked="{{ dashboardSettings.showProfit1y }}" onChange="{{ () => toggleDashboardSetting('showProfit1y') }}" /> 1 Year Return</label>
+          <label style="display: flex; align-items: center; gap: 8px; padding: 12px; background: #f9f9f9; border-radius: 6px; cursor: pointer;"><input type="checkbox" checked="{{ dashboardSettings.showProfit3y }}" onChange="{{ () => toggleDashboardSetting('showProfit3y') }}" /> 3 Years Return</label>
+          <label style="display: flex; align-items: center; gap: 8px; padding: 12px; background: #f9f9f9; border-radius: 6px; cursor: pointer;"><input type="checkbox" checked="{{ dashboardSettings.showProfit5y }}" onChange="{{ () => toggleDashboardSetting('showProfit5y') }}" /> 5 Years Return</label>
+          <label style="display: flex; align-items: center; gap: 8px; padding: 12px; background: #f9f9f9; border-radius: 6px; cursor: pointer;"><input type="checkbox" checked="{{ dashboardSettings.showProfit10y }}" onChange="{{ () => toggleDashboardSetting('showProfit10y') }}" /> 10 Years Return</label>
+          <label style="display: flex; align-items: center; gap: 8px; padding: 12px; background: #f9f9f9; border-radius: 6px; cursor: pointer;"><input type="checkbox" checked="{{ dashboardSettings.showProfitInception }}" onChange="{{ () => toggleDashboardSetting('showProfitInception') }}" /> Inception Return</label>
+        </div>
+
+        <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; margin-top: 20px;">📋 Company Information</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+          <label style="display: flex; align-items: center; gap: 8px; padding: 12px; background: #f9f9f9; border-radius: 6px; cursor: pointer;"><input type="checkbox" checked="{{ dashboardSettings.showManagement }}" onChange="{{ () => toggleDashboardSetting('showManagement') }}" /> Management Info</label>
+          <label style="display: flex; align-items: center; gap: 8px; padding: 12px; background: #f9f9f9; border-radius: 6px; cursor: pointer;"><input type="checkbox" checked="{{ dashboardSettings.showGrowth }}" onChange="{{ () => toggleDashboardSetting('showGrowth') }}" /> Growth Metrics</label>
+          <label style="display: flex; align-items: center; gap: 8px; padding: 12px; background: #f9f9f9; border-radius: 6px; cursor: pointer;"><input type="checkbox" checked="{{ dashboardSettings.showFivePoints }}" onChange="{{ () => toggleDashboardSetting('showFivePoints') }}" /> Growth Drivers (10 Points)</label>
+        </div>
+
+        <div style="margin-top: 20px; padding: 12px; background: #e0e7ff; border-radius: 6px; border-left: 4px solid #0066cc;">
+          <div style="font-size: 13px; color: #0066cc; font-weight: 600;">💾 Settings auto-saved to your profile</div>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    stocks: null,
+    isLoggedIn: false,
+    userEmail: '',
+    assetType: 'stocks',
+    searchTerm: '',
+    sortBy: 'rating',
+    bookmarks: [],
+    notes: [],
+    activeTab: 'screener',
+    showNoteModal: false,
+    modalTitle: 'Add Note',
+    editingNoteId: null,
+    stocksData: [],
+    marketStatus: 'Open',
+    gainersCount: '28',
+    losersCount: '12',
+    topMFReturn: '+18.5%',
+    selectedStock: null,
+    adminMode: false,
+    dashboardSettings: {
+      showProfit1d: true, showProfit7d: true, showProfit1m: true, showProfit3m: true,
+      showProfit6m: true, showProfit1y: true, showProfit3y: true, showProfit5y: false,
+      showProfit10y: false, showProfitInception: false, showManagement: true,
+      showGrowth: true, showFivePoints: false,
+    },
+  };
+
+  componentDidMount() {
+    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    const userEmail = localStorage.getItem('userEmail') || '';
+    const settings = localStorage.getItem('dashboardSettings');
+    if (isLoggedIn) this.setState({ isLoggedIn, userEmail });
+    if (settings) this.setState({ dashboardSettings: JSON.parse(settings) });
+    this.loadData();
+    this.forceUpdate();
+  }
+
+  loadData = () => {
+    const stocks = [
+      { symbol: 'RELIANCE', name: 'Reliance Industries', price: 2950, change: 3.1, rating: 5, sentiment: 'bullish', ytd: 22.5, pe: 20.5, dividend: 0.7, cap: 3820000, sector: 'Energy',
+        profit: { '1d': 3.1, '7d': 5.8, '1m': 8.2, '3m': 12.5, '6m': 18.3, '1y': 22.5, '3y': 45.2, '5y': 62.8, '10y': 125.3, 'inception': 285.5 },
+        management: 'Mukesh Ambani (Chairman), Hital Meswani (MD)', growth: 'Revenue CAGR 12%, Profit CAGR 15%', industry: 'O&G Refining, Chemicals, Retail', marketCap: '₹38.2T', employees: '360,000+', founded: '1957',
+        fivePointsGrowth: ['Expanded retail with 13,000+ stores', 'Jio leading 5G rollout', 'Green energy transition underway', 'Digital services growing 40% YoY', 'International expansion in progress', 'Net zero by 2060 target', 'New refineries coming up', 'E-commerce integration with retail', 'AI-powered customer solutions', '500K direct employment generation'] },
+      { symbol: 'TCS', name: 'Tata Consultancy Services', price: 3850, change: 2.3, rating: 5, sentiment: 'bullish', ytd: 18.5, pe: 26.5, dividend: 1.2, cap: 1250000, sector: 'IT',
+        profit: { '1d': 2.3, '7d': 4.5, '1m': 6.8, '3m': 11.2, '6m': 15.3, '1y': 18.5, '3y': 38.2, '5y': 52.5, '10y': 105.8, 'inception': 245.3 },
+        management: 'K Krithivasan (CEO), N Chandrasekaran (Chairman)', growth: 'Revenue CAGR 10%, Profit CAGR 11%', industry: 'IT Consulting & Services', marketCap: '₹12.5T', employees: '614,000+', founded: '1968',
+        fivePointsGrowth: ['Digital transformation services 35% YoY growth', 'Cloud revenue crossed $2B', 'AI/ML capabilities expanded globally', 'Acquired Pace Systems & Everest Group', 'Headcount grew to 614K across 35 countries', 'GenAI consulting platform launched', 'ERP modernization segment strong', 'Sustainability: Net zero by 2030', 'India operations expansion', 'New campus inaugurations'] },
+      { symbol: 'HDFCBANK', name: 'HDFC Bank', price: 1580, change: 1.8, rating: 4, sentiment: 'bullish', ytd: 8.2, pe: 24.3, dividend: 0.9, cap: 1210000, sector: 'Finance',
+        profit: { '1d': 1.8, '7d': 3.2, '1m': 5.5, '3m': 7.8, '6m': 10.2, '1y': 8.2, '3y': 22.5, '5y': 35.8, '10y': 78.3, 'inception': 185.5 },
+        management: 'Sashidhar Jagdishan (MD & CEO)', growth: 'Asset CAGR 16%, Profit CAGR 18%', industry: 'Private Banking', marketCap: '₹12.1T', employees: '314,000+', founded: '1994',
+        fivePointsGrowth: ['Deposits grew 18% YoY to ₹17.8L Cr', 'Digital banking users crossed 40M', 'Retail advances grew 14% YoY', 'NIM improved to 4.2%', 'Cost-to-income ratio at 41%', 'CASA ratio improved to 48%', 'Mortgage portfolio diversified', 'Investment in fintech startups', 'AI-based fraud detection', 'International expansion ongoing'] },
+      { symbol: 'INFY', name: 'Infosys', price: 1520, change: -0.5, rating: 4, sentiment: 'neutral', ytd: 12.8, pe: 22.1, dividend: 1.8, cap: 640000, sector: 'IT',
+        profit: { '1d': -0.5, '7d': 1.2, '1m': 3.5, '3m': 6.8, '6m': 9.5, '1y': 12.8, '3y': 28.5, '5y': 42.3, '10y': 95.2, 'inception': 225.8 },
+        management: 'Salil Parekh (CEO)', growth: 'Revenue CAGR 9%, Profit CAGR 12%', industry: 'IT Services', marketCap: '₹6.4T', employees: '309,000+', founded: '1981',
+        fivePointsGrowth: ['Digital revenue at 62% of total', 'Cloud business grew 30% YoY', 'AI-powered solutions in 100+ clients', 'Reskilling initiative for 67K employees', 'Acquired 12 companies in 3 years', 'Sustainability initiatives scaled up', 'Engineering college partnerships', 'Hybrid work model optimization', 'Gen AI talent acquisition', 'Gaming and metaverse investments'] },
+      { symbol: 'BAJAJFINSV', name: 'Bajaj Finserv', price: 1820, change: 2.5, rating: 5, sentiment: 'bullish', ytd: 25.3, pe: 23.4, dividend: 0.8, cap: 272000, sector: 'Finance',
+        profit: { '1d': 2.5, '7d': 5.2, '1m': 8.8, '3m': 15.3, '6m': 19.8, '1y': 25.3, '3y': 52.5, '5y': 78.2, '10y': 142.5, 'inception': 325.8 },
+        management: 'Sanjiv Bajaj (Chairman)', growth: 'AUM CAGR 20%, Profit CAGR 22%', industry: 'Diversified Finance', marketCap: '₹2.72T', employees: '158,000+', founded: '2001',
+        fivePointsGrowth: ['Insurance premium income grew 25% YoY', 'Digital adoption at 45% for renewals', 'Expanded to 15 new cities', 'Health insurance growing 40% YoY', 'Claims settlement time reduced to 24hrs', 'Micro-insurance product expansion', 'Bancassurance partnerships growing', 'Investment in wellness tech', 'Cyber insurance portfolio launched', 'Rural market penetration strategy'] },
+      { symbol: 'SBIN', name: 'State Bank of India', price: 810, change: 0.9, rating: 4, sentiment: 'bullish', ytd: 14.5, pe: 11.2, dividend: 2.1, cap: 680000, sector: 'Finance',
+        profit: { '1d': 0.9, '7d': 2.1, '1m': 4.2, '3m': 7.5, '6m': 10.8, '1y': 14.5, '3y': 35.2, '5y': 52.8, '10y': 108.5, 'inception': 285.3 },
+        management: 'Dinesh Khara (Chairman)', growth: 'Asset CAGR 14%, Profit CAGR 16%', industry: 'Public Banking', marketCap: '₹6.8T', employees: '252,000+', founded: '1806',
+        fivePointsGrowth: ['Digital loans crossed $5B annual origination', 'Mobile banking users at 100M+', 'YONO app downloads crossed 50M', 'Retail advances grew 15% YoY', 'Cost-to-income at 46.2%', 'Rural penetration expanding', 'SME lending segment strong', 'Fintech partnerships active', 'Green finance initiatives scaled', 'Investment banking growth'] },
+      { symbol: 'AXIS', name: 'Axis Bank', price: 1125, change: 1.5, rating: 4, sentiment: 'bullish', ytd: 11.3, pe: 12.8, dividend: 1.4, cap: 340000, sector: 'Finance',
+        profit: { '1d': 1.5, '7d': 3.2, '1m': 5.8, '3m': 8.5, '6m': 10.5, '1y': 11.3, '3y': 28.5, '5y': 45.2, '10y': 95.8, 'inception': 225.5 },
+        management: 'Amitabh Chaudhry (MD & CEO)', growth: 'Asset CAGR 15%, Profit CAGR 17%', industry: 'Private Banking', marketCap: '₹3.4T', employees: '211,000+', founded: '1994',
+        fivePointsGrowth: ['Deposits grew 16% YoY to ₹8.4L Cr', 'Digital initiatives saved ₹250Cr annually', 'Retail advances grew 12% YoY', 'NIM at 4.0%', 'Customer satisfaction score improved 8%', 'Wealth management segment strong', 'Corporate banking growth', 'SME lending expanding', 'Sustainable finance focus', 'Technology modernization ongoing'] },
+      { symbol: 'ITC', name: 'ITC Limited', price: 385, change: 0.8, rating: 4, sentiment: 'bullish', ytd: 15.2, pe: 19.2, dividend: 3.2, cap: 385000, sector: 'FMCG',
+        profit: { '1d': 0.8, '7d': 2.5, '1m': 4.8, '3m': 8.2, '6m': 11.5, '1y': 15.2, '3y': 32.8, '5y': 48.5, '10y': 98.2, 'inception': 225.5 },
+        management: 'Sanjiv Puri (Chairman & MD)', growth: 'Revenue CAGR 8%, Profit CAGR 10%', industry: 'Diversified FMCG', marketCap: '₹3.85T', employees: '210,000+', founded: '1910',
+        fivePointsGrowth: ['FMCG business grew 12% YoY', 'Agri business revenue at ₹5,600Cr', 'Hotels segment EBITDA positive', 'Paperboards exports grew 18%', 'Sustainability initiatives carbon-neutral 2030', 'Premium portfolio expansion', 'E-commerce sales growing 45% YoY', 'Direct distribution to 2M outlets', 'Innovation in snacking category', 'Water management initiatives'] },
+      { symbol: 'KOTAKBANK', name: 'Kotak Mahindra Bank', price: 1955, change: 2.2, rating: 5, sentiment: 'bullish', ytd: 19.8, pe: 16.3, dividend: 1.1, cap: 315000, sector: 'Finance',
+        profit: { '1d': 2.2, '7d': 4.8, '1m': 8.5, '3m': 13.2, '6m': 16.5, '1y': 19.8, '3y': 45.2, '5y': 65.8, '10y': 125.3, 'inception': 285.5 },
+        management: 'Uday Kotak (MD & CEO)', growth: 'Asset CAGR 18%, Profit CAGR 20%', industry: 'Private Banking', marketCap: '₹3.15T', employees: '279,000+', founded: '1985',
+        fivePointsGrowth: ['Deposits grew 20% YoY to ₹7.2L Cr', 'Digital customer base at 65%', 'Credit growth at 16% YoY', 'NIM improved to 4.4%', 'ROA at 2.1% (industry leading)', 'Wealth management strong', 'Corporate banking segment robust', 'Investment in AI/ML', 'Green finance focus', 'Insurance distribution growth'] },
+      { symbol: 'SUNPHARMA', name: 'Sun Pharmaceutical', price: 875, change: 0.6, rating: 4, sentiment: 'bullish', ytd: 8.9, pe: 18.4, dividend: 0.5, cap: 225000, sector: 'Pharma',
+        profit: { '1d': 0.6, '7d': 1.8, '1m': 3.5, '3m': 5.8, '6m': 7.2, '1y': 8.9, '3y': 18.5, '5y': 28.2, '10y': 65.3, 'inception': 185.5 },
+        management: 'Dilip Shanghvi (Founder)', growth: 'Revenue CAGR 11%, Profit CAGR 13%', industry: 'Pharmaceutical', marketCap: '₹2.25T', employees: '96,000+', founded: '1983',
+        fivePointsGrowth: ['US market revenue at $1.2B', 'Complex generics growing 20% YoY', 'R&D pipeline with 40+ molecules', 'Biosimilars revenue at $350M', 'CapEx ₹3,000Cr for new facilities', 'Emerging markets expansion', 'Specialty pharma growth', 'Digital health initiatives', 'Cost optimization programs', 'ESG commitments strengthened'] },
+      { symbol: 'NESTLEIND', name: 'Nestlé India', price: 2485, change: 0.9, rating: 5, sentiment: 'bullish', ytd: 12.3, pe: 52.1, dividend: 1.2, cap: 225000, sector: 'FMCG',
+        profit: { '1d': 0.9, '7d': 2.2, '1m': 4.5, '3m': 7.8, '6m': 9.5, '1y': 12.3, '3y': 25.8, '5y': 38.5, '10y': 85.2, 'inception': 195.5 },
+        management: 'Suresh Narayanan (Chairman & MD)', growth: 'Revenue CAGR 7%, Profit CAGR 9%', industry: 'Premium FMCG', marketCap: '₹2.25T', employees: '9,500+', founded: '1912',
+        fivePointsGrowth: ['Premium product portfolio grew 15% YoY', 'E-commerce sales grew 45% YoY', 'Sustainability: 100% recyclable packaging goal 2025', 'Direct distribution expanded to 2M outlets', 'Profitability ratio at 18.5%', 'Health and wellness segment strong', 'Digital engagement with consumers', 'Manufacturing efficiency improved', 'Supply chain resilience built', 'Community impact programs expanded'] }
+    ];
+    this.setState({ stocksData: stocks });
+  };
+
+  setTab = (tab) => this.setState({ activeTab: tab });
+  setSearchTerm = (e) => this.setState({ searchTerm: e.target ? e.target.value : e });
+  setSortBy = (e) => this.setState({ sortBy: e.target ? e.target.value : e });
+  selectStock = (symbol) => {
+    const stock = this.state.stocksData.find(s => s.symbol === symbol);
+    this.setState({ selectedStock: stock, activeTab: 'details' });
+  };
+  handleLogout = () => {
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('userEmail');
+    this.setState({ isLoggedIn: false, userEmail: '', adminMode: false });
+  };
+  toggleAdminMode = () => this.setState(s => ({ adminMode: !s.adminMode }));
+  toggleDashboardSetting = (setting) => {
+    this.setState(s => {
+      const newSettings = { ...s.dashboardSettings, [setting]: !s.dashboardSettings[setting] };
+      localStorage.setItem('dashboardSettings', JSON.stringify(newSettings));
+      return { dashboardSettings: newSettings };
+    });
+  };
+
+  renderVals = () => {
+    const { stocksData, searchTerm, sortBy, selectedStock, isLoggedIn, userEmail, adminMode, dashboardSettings, activeTab } = this.state;
+    let filtered = (stocksData || []).filter(s => {
+      if (searchTerm && !s.symbol.toLowerCase().includes(searchTerm) && !s.name.toLowerCase().includes(searchTerm)) return false;
+      return true;
+    });
+    filtered.sort((a, b) => {
+      if (sortBy === 'return') return b.ytd - a.ytd;
+      if (sortBy === 'momentum') return b.change - a.change;
+      return b.rating - a.rating;
+    });
+    const tableRows = filtered.map(s => ({
+      symbol: s.symbol,
+      name: s.name,
+      priceStr: '₹' + s.price,
+      changeStr: (s.change > 0 ? '+' : '') + s.change + '%',
+      changeColor: s.change > 0 ? '#10b981' : '#ef4444',
+      ratingBg: s.rating >= 4 ? '#dcfce7' : s.rating >= 3 ? '#fef3c7' : '#fee2e2',
+      ratingColor: s.rating >= 4 ? '#166534' : s.rating >= 3 ? '#92400e' : '#7f1d1d',
+      ratingStr: s.rating + '/5',
+      ytdStr: (s.ytd > 0 ? '+' : '') + s.ytd + '%',
+      ytdColor: s.ytd > 0 ? '#10b981' : '#ef4444',
+    }));
+    return {
+      isLoggedIn, userEmail, adminMode, dashboardSettings, activeTab, selectedStock,
+      marketStatus: 'Open', gainersCount: '28', losersCount: '12', topMFReturn: '+18.5%',
+      tableRows, bookmarkCount: '0',
+      setTab: this.setTab, setSearchTerm: this.setSearchTerm, setSortBy: this.setSortBy,
+      selectStock: this.selectStock, handleLogout: this.handleLogout,
+      toggleAdminMode: this.toggleAdminMode, toggleDashboardSetting: this.toggleDashboardSetting,
+    };
+  };
+}
+</script>
+</body>
+</html>
