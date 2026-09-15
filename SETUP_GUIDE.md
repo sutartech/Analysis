@@ -1,236 +1,98 @@
-# Indian Stock & MF Analysis Website - Complete Setup Guide
+# IndiaMarket Pro — Setup Guide
 
-## 🚀 Quick Start (15 mins)
+Two files matter:
 
-### Step 1: Create GitHub Repository
-1. Go to **github.com** → Sign in
-2. Click **+ → New repository**
-3. Name: `indian-stock-analysis`
-4. Make it **Public**
-5. Click **Create repository**
-
-### Step 2: Set Up Google Apps Script
-1. Go to **script.google.com**
-2. Click **+ New project**
-3. Name it: `Stock Data Fetcher`
-4. Copy entire `Code.gs` file content into the editor
-5. Replace `YOUR_GITHUB_TOKEN_HERE` with your GitHub token:
-   - Go to github.com → Settings → Developer settings → Personal access tokens → Tokens (classic)
-   - Click **Generate new token (classic)**
-   - Select: `repo` (full control of private repositories)
-   - Copy token & paste in Code.gs
-6. Replace `username/indian-stock-analysis` with your repo name
-7. Click **Deploy → New deployment → Web app**
-8. Execute as: Your account
-9. Allow access: Anyone
-10. Copy deployment URL (save for later)
-
-### Step 3: Create GitHub Folders & Files
-1. In your repo, click **Add file → Create new file**
-2. Path: `data/stocks.json`
-3. Paste:
-```json
-[
-  {
-    "symbol": "RELIANCE",
-    "name": "Reliance Industries",
-    "price": 2950,
-    "change": 3.1,
-    "rating": 5,
-    "sentiment": "bullish",
-    "ytd": 22.5,
-    "pe": 20.5,
-    "dividend": 0.7,
-    "cap": 3820000,
-    "sector": "Energy"
-  }
-]
-```
-4. Click **Commit changes**
-
-5. Create `data/mfs.json`:
-```json
-[
-  {
-    "name": "HDFC Top 100 Fund",
-    "returns1y": 18.5,
-    "returns3y": 12.3,
-    "rating": 5,
-    "aum": "₹45,000 Cr",
-    "category": "Large Cap"
-  }
-]
-```
-
-6. Create `index.html` → Paste the full DC HTML from the website file
-
-### Step 4: Enable GitHub Pages
-1. Go to repo → **Settings → Pages**
-2. Source: **Deploy from a branch**
-3. Branch: **main** (or master)
-4. Folder: **root**
-5. Click **Save**
-6. Wait 2-3 mins → Your site is live at: `https://yourusername.github.io/indian-stock-analysis`
-
-### Step 5: Set Up Automated Updates
-1. Go back to **Google Apps Script** project
-2. Click **Triggers** (clock icon on left)
-3. Click **+ Create a new trigger**
-4. Configure:
-   - Function: `fetchAndUpdateStocks`
-   - Deployment: `Head`
-   - Event type: `Time-driven`
-   - Type: `Minutes timer`
-   - Frequency: `Every 5 minutes`
-5. Click **Save**
-
-Now your data updates automatically every 5 minutes! 🎉
+- **`index.html`** — the whole website, self-contained. Upload as-is.
+- **`Code.gs`** — Google Apps Script that keeps your spreadsheet fed with live prices.
 
 ---
 
-## 📊 Data Sources
+## 1. Publish the website (5 min)
 
-### Primary APIs (Free Tiers)
-- **NSE India API** – https://www.nseindia.com/api
-  - Stock prices, volumes, change %
-  - No auth required
-  
-- **yfinance** – https://rapidapi.com/spartan737/api/yfinance-api
-  - Historical prices, PE ratios, dividends
-  - Free tier: 500 calls/month
+1. Create a GitHub repo, e.g. `indian-stock-analysis` (must be **public** for free Pages).
+2. Upload **`index.html`** to the repo root. Keep the filename exactly `index.html`.
+3. Repo → **Settings → Pages** → Source: `Deploy from a branch`, Branch: `main` / `/root` → Save.
+4. Wait ~2 minutes. Site is live at `https://YOURNAME.github.io/indian-stock-analysis/`.
 
-- **Alpha Vantage** – https://www.alphavantage.co
-  - Intraday, historical data
-  - Free tier: 5 calls/min, 500/day
-
-- **Rapid API** – Multiple stock market APIs
-  - Indian stock data, MF returns
-  - Free tier varies by API
-
-### Recommended Setup
-For 10 stocks, 5-min updates:
-- Use NSE API for live prices (most reliable)
-- Cache yfinance data (PE, dividend, 52-week) every 1 hour
-- Update historical metrics daily
+That's it — the site works immediately using its built-in data. The steps below add live prices.
 
 ---
 
-## 🔧 Customization
+## 2. Connect the live spreadsheet (10 min)
 
-### Change Update Frequency
-In Code.gs, modify trigger:
-- Every 5 minutes (recommended for live prices)
-- Every 30 minutes (if using slower APIs)
-- Every hour (for daily snapshots)
+Your sheet: `1eMye_WikawrpZuH_4_VklA7Gj95nKcmB_xe6GwU-gsk`
 
-### Add More Stocks
-In `fetchNSEData()` function, add symbols:
-```javascript
-const stocks = [
-  'RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'BAJAJFINSV', 
-  'SBIN', 'AXIS', 'ITC', 'KOTAKBANK', 'NESTLEIND',
-  'WIPRO', 'SUNPHARMA', 'DRREDDY', 'MARUTI'  // Add more here
-];
-```
+1. Go to **script.google.com** → **New project**.
+2. Delete the placeholder code, paste all of **`Code.gs`**, save.
+3. Confirm `SHEET_ID` at the top matches your sheet.
+4. Run **`setupSheet`** once. Authorise when Google prompts (Advanced → Go to project → Allow).
+5. Run **`updateAll`** once. Open the sheet — you should see rows filling in.
+6. Left rail → **Triggers** (clock icon) → **Add trigger**:
+   - Function: `updateAll`
+   - Event source: `Time-driven`
+   - Interval: **Every 5 minutes**
+7. In the **spreadsheet**: **File → Share → Publish to web → Publish**. This is required — without it the website cannot read the sheet.
 
-### Customize Admin Dashboard
-Edit the HTML → Search for `dashboardSettings` in the logic class:
-```javascript
-dashboardSettings: {
-  showProfit1d: true,      // Toggle 1-day returns
-  showProfit7d: true,      // Toggle 7-day returns
-  showProfit3y: false,     // Toggle 3-year returns
-  showManagement: true,    // Toggle management info
-  showGrowth: true,        // Toggle growth metrics
-  showFivePoints: true     // Toggle 10 growth drivers
-}
-```
+Reload your site. The header line should read **🟢 Live sheet connected**.
+
+### Column contract
+
+The website matches these header names (case-insensitive). Don't rename them:
+
+`symbol` · `name` · `price` · `change` · `ytd` · `pe` · `dividend` · `cap` · `sector` · `updated`
+
+Blank cells are ignored — the site keeps its built-in value for that field. So you can fill `pe` and `dividend` by hand, or from another source, without breaking anything.
+
+### Adding more stocks
+
+Edit the `SYMBOLS` array in `Code.gs`. Any NSE symbol works (Yahoo suffix `.NS` is added automatically).
 
 ---
 
-## 🎯 Making it 10/10 Rating
+## 3. Using the dashboard
 
-### UI/UX Enhancements
-✅ Gradient headers & hero cards  
-✅ Responsive grid layouts  
-✅ Color-coded performance metrics  
-✅ Smooth tab transitions  
-✅ Mobile-friendly design  
+**Sign in** — top right. Any username/password creates an account on first use. A seeded admin exists: `admin` / `admin123`. Or use **Continue as Guest**.
 
-### Data Accuracy
-✅ Real-time NSE pricing  
-✅ Auto-updated every 5 mins  
-✅ Historical profit metrics  
-✅ Management team details  
-✅ 10 growth drivers per stock  
+**Screener** — toggle between **Stocks** and **Mutual Funds** (same table, same features). **Top Picks** cards at the top show the three highest composite scores in the current universe. Search, sort (Composite Score / Rating / Returns / Movers), and use "+ Add & Bookmark" for any symbol not in the list. Drag the right edge of any column header to resize it.
 
-### Features
-✅ Admin dashboard settings  
-✅ Stock details view  
-✅ Search & sort capabilities  
-✅ Profit metrics (1d–inception)  
-✅ LocalStorage for preferences  
+**Score column** — a 0–100 composite blending analyst rating, YTD return, and valuation. Weights are set in Admin.
 
-### Performance
-✅ No external bundles  
-✅ Pure HTML/CSS/JS  
-✅ Instant load time  
-✅ GitHub Pages CDN  
+**Trend column** — a sparkline of each holding's return profile from since-inception through to today.
 
----
+**⇄ Compare** — tick the ⇄ button on 2–4 rows, then click Compare for a side-by-side card table (score, price, rating, YTD, 1/3/5-year, P/E, dividend, sector).
 
-## 🐛 Troubleshooting
+**View** — opens the full analysis popup: price, all profit periods (1d → inception), management, growth CAGRs, growth drivers, and an inline note you can save.
 
-### Data not updating?
-- Check Google Apps Script → Executions tab for errors
-- Verify GitHub token is valid
-- Check repo name matches Code.gs
+**Watchlist** — create multiple named watchlists ("Bookmark1", "Long term", etc.), move stocks between them with the dropdown on each card.
 
-### Website not loading?
-- Wait 5 mins after first deploy
-- Clear browser cache (Ctrl+Shift+Del)
-- Check repo is public
-- Verify index.html in root folder
+**Notes** — every note you write, editable and deletable, grouped by symbol.
 
-### NSE API not working?
-- API is sometimes rate-limited
-- Fall back to static data in Code.gs
-- Use yfinance as secondary source
-- Contact NSE for higher limits
+**Admin** (🔑 visible when signed in → ⚙️ Admin → ⚙️ Dashboard Settings):
+- Which profit periods appear (1d … from-inception)
+- **Composite score weights** — three sliders (rating / returns / valuation); normalised, so they needn't total 100
+- Show/hide management, growth, growth drivers
+- Which live parameter fills the extra table column (P/E, dividend yield, market cap)
+- Define extra note columns (Risk, Target Price, …)
+- Create users and set their passwords
 
-### GitHub token expired?
-- Generate new token in GitHub settings
-- Update Code.gs with new token
-- Re-deploy Google Apps Script
+**🔑 Password** — any signed-in user changes their own password here.
+
+All user data (watchlists, notes, settings, accounts) is stored in the browser's local storage on that device.
 
 ---
 
-## 📱 Deployment Checklist
+## Troubleshooting
 
-- [ ] GitHub repo created
-- [ ] Code.gs configured with token
-- [ ] Google Apps Script deployed
-- [ ] Folder structure (data/, etc.) created
-- [ ] index.html uploaded
-- [ ] GitHub Pages enabled
-- [ ] Trigger scheduled (5 mins)
-- [ ] First manual run successful
-- [ ] Website live & working
-- [ ] Admin settings tested
+**Header says "Using built-in data"** — the sheet isn't published to the web. Redo step 2.7.
+
+**Sheet stays empty** — open Apps Script → **Executions** and read the error. Usually a missing authorisation (re-run `updateAll` and accept the prompt), or Yahoo throttling (wait and retry). Run `testPublicRead` to confirm the site-facing URL returns rows.
+
+**Site shows `{{ something }}` on screen** — you uploaded the `.dc.html` source instead of `index.html`. Upload `index.html`.
+
+**Prices look stale** — NSE/Yahoo data is delayed ~15 min on free endpoints. The `updated` column shows the fetch time.
 
 ---
 
-## 🎓 Next Steps
+## Notes on scope
 
-1. **Add more stocks** – Include entire Nifty 50
-2. **Implement alerts** – Email for stock crossing targets
-3. **Add portfolio tracker** – Users can create watchlists
-4. **Export to CSV** – Download analysis & bookmarks
-5. **Dark mode** – Toggle in admin settings
-6. **Multi-language** – Hindi/Regional language support
-7. **Mobile app** – React Native version
-8. **Social sharing** – Share analysis on Twitter/LinkedIn
-
----
-
-**Your 10/10 Indian Stock Analysis website is live! 🚀**
+Prices, changes, YTD and market cap come from the live feed. The qualitative fields — management names, growth CAGRs, the ten growth drivers, and analyst ratings — are authored content stored in the page; no free API supplies these reliably. Edit them in the sheet or in the source, or wire a paid data provider into `Code.gs` the same way Yahoo is wired.
