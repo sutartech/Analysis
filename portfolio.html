@@ -45,6 +45,14 @@
   <link rel="preload" href="./portfolio.css?v=20260910-20108-codingbook" as="style">
   <link rel="preload" href="./portfolio.js?v=20260910-20108-codingbook" as="script">
   <link rel="stylesheet" href="./portfolio.css?v=20260910-20108-codingbook" onload="sarNiAssetLoaded('css')" onerror="sarNiAssetFailed('css')">
+
+<style id="analysis-portfolio-only">
+  .side-nav [data-section="expenditure"],
+  .side-nav [data-section="diary"],
+  .side-nav [data-section="books"],
+  .side-nav [data-section="watchlist"],
+  #quickDiaryBtn, #portfolioStartupRetryBtn.analysis-not-needed {display:none!important}
+</style>
 </head>
 <body>
   <a class="skip-link" href="#mainDashboard">Skip to dashboard</a>
@@ -61,7 +69,7 @@
         <div class="feature-pills"><span>MF statement import</span><span>Zerodha ready</span><span>Auto prices</span><span>Family view</span></div>
       </div>
       <form id="loginForm" class="login-card" autocomplete="on">
-        <div><p class="eyebrow">WELCOME BACK</p><h2>Sign in</h2><p class="muted">Use your Apps Script dashboard username and password.</p></div>
+        <div><p class="eyebrow">WELCOME BACK</p><h2>Sign in</h2><p class="muted">Use the credentials of your separate Analysis Portfolio backend. (After migration, ask the Analysis administrator to set your password.)</p></div>
         <label>Username<input id="loginUsername" name="username" autocomplete="username" required maxlength="60" placeholder="admin"></label>
         <label>Password<div class="password-wrap"><input id="loginPassword" name="password" type="password" autocomplete="current-password" required maxlength="200" placeholder="Your password"><button type="button" class="text-button" data-toggle-password="loginPassword">Show</button></div></label>
         <div class="login-options">
@@ -69,10 +77,11 @@
           <span class="remember-note">Password is never saved</span>
         </div>
         <button id="loginButton" class="primary-button full" type="submit">Sign in</button>
+        <p class="muted" style="font-size:12px">If SarNi works but this login fails, your existing SarNi backend deployment may need its new version deployed. Do not reset your password.</p>
         <p id="loginMessage" class="form-message" role="alert"></p>
         <div class="login-meta">
           <p class="tiny muted">Your password is never stored in the browser.</p>
-          <div class="version-pair"><span id="loginVersion" class="version-badge">Frontend · v20.1.8</span><span id="loginBackendVersion" class="version-badge backend-version">Backend · v3.17.11</span></div>
+          <div class="version-pair"><span id="loginVersion" class="version-badge">Frontend · v20.2.0</span><span id="loginBackendVersion" class="version-badge backend-version">Backend · v4.0.0</span></div>
           <button id="repairBrowserBtn" class="login-repair-button" type="button">↻ Repair browser cache/session</button>
         </div>
       </form>
@@ -92,7 +101,7 @@
       </div>
     </div>
     <aside class="sidebar">
-      <div class="side-brand"><div class="brand-mark small">₹</div><div><strong id="sideAppName">SarNi</strong><span>Financial Command Centre</span></div><button id="sidebarCollapseBtn" class="sidebar-collapse-button" type="button" title="Collapse sidebar" aria-label="Collapse sidebar">‹</button></div>
+      <div class="side-brand"><div class="brand-mark small">₹</div><div><strong id="sideAppName">Analysis</strong><span>Investment Command Centre</span></div><button id="sidebarCollapseBtn" class="sidebar-collapse-button" type="button" title="Collapse sidebar" aria-label="Collapse sidebar">‹</button></div>
       <nav class="side-nav" aria-label="Main navigation">
         <a href="./index.html" class="nav-item analysis-return-link" title="Back to IndiaMarket Pro market analysis"><span>↩</span>Market Analysis</a>
 
@@ -111,7 +120,7 @@
       <div class="sidebar-session-card">
         <span class="sidebar-session-label">SIGNED IN AS</span>
         <strong id="dashboardUsername">—</strong>
-        <span id="dashboardVersion">Frontend · v20.1.8</span><span id="dashboardBackendVersion">Backend · v3.17.11</span>
+        <span id="dashboardVersion">Frontend · v20.2.0</span><span id="dashboardBackendVersion">Backend · v4.0.0</span>
       </div>
       <div class="sidebar-foot"><button id="changePasswordBtn" class="nav-item"><span>⌁</span>Change password</button><button id="logoutBtn" class="nav-item danger-text"><span>↪</span>Log out</button></div>
     </aside>
@@ -126,14 +135,14 @@
         </nav>
 
       <header class="topbar">
-        <div><div class="topbar-title-line"><div><p class="eyebrow" id="todayLabel"></p><h1 id="pageTitle">Investment Portfolio</h1></div><div class="dashboard-version-pair"><span id="dashboardVersionTop" class="dashboard-version-chip">FE v20.1.8</span><span id="dashboardBackendVersionTop" class="dashboard-version-chip backend-chip">BE v3.17.11</span></div></div></div>
+        <div><div class="topbar-title-line"><div><p class="eyebrow" id="todayLabel"></p><h1 id="pageTitle">Investment Portfolio</h1></div><div class="dashboard-version-pair"><span id="dashboardVersionTop" class="dashboard-version-chip">FE v20.2.0</span><span id="dashboardBackendVersionTop" class="dashboard-version-chip backend-chip">BE v4.0.0</span></div></div></div>
         <div class="top-actions"><button id="commandPaletteBtn" class="command-palette-button" type="button" title="Search pages and actions (Ctrl/⌘ K)" aria-haspopup="dialog"><span>⌕</span><strong>Search</strong><kbd>⌘K</kbd></button><div class="display-preferences" title="Personalise dashboard appearance"><select id="displayDensitySelect" aria-label="Dashboard density"><option value="COMFORTABLE">Comfortable</option><option value="COMPACT">Compact</option></select><select id="displayThemeSelect" aria-label="Dashboard theme"><option value="LIGHT" selected>Light</option><option value="AUTO">Auto theme</option><option value="DARK">Dark</option></select></div><div class="auto-refresh-control" title="Automatically refresh portfolio and watchlist prices while this dashboard is open"><span class="auto-pulse"></span><div class="auto-refresh-copy"><strong>Auto update</strong><span id="autoRefreshCountdown">15 min</span></div><select id="autoRefreshSelect" aria-label="Auto update interval"><option value="5">5 min</option><option value="15" selected>15 min</option><option value="30">30 min</option><option value="60">60 min</option><option value="0">Off</option></select></div><div class="sync-status" id="syncStatus"><span class="status-dot"></span><span>Ready</span></div><button id="refreshBtn" class="icon-button" title="Refresh prices and NAVs" aria-label="Refresh prices and NAVs">↻</button><button id="addInvestmentBtn" class="primary-button">+ Add investment</button><button id="profileButton" class="avatar-button" aria-label="Signed-in user"><span id="avatarInitial">A</span></button><button id="headerLogoutBtn" class="header-logout-button" type="button" title="Sign out of SarNi" aria-label="Sign out"><span aria-hidden="true">↪</span><strong>Sign out</strong></button></div>
       </header>
 
       <div id="mobileSessionBar" class="mobile-session-bar" aria-label="Mobile session controls">
         <div class="mobile-session-versions">
-          <span id="mobileFrontendVersion" class="mobile-version-chip">FE v20.1.8</span>
-          <span id="mobileBackendVersion" class="mobile-version-chip backend">BE v3.17.11</span>
+          <span id="mobileFrontendVersion" class="mobile-version-chip">FE v20.2.0</span>
+          <span id="mobileBackendVersion" class="mobile-version-chip backend">BE v4.0.0</span>
         </div>
         <div class="mobile-session-actions">
           <button id="mobileChangePasswordBtn" class="mobile-session-button" type="button">Password</button>
@@ -1694,7 +1703,7 @@
     </div>
   <script>
     window.PORTFOLIO_CONFIG={
-      API_URL:'https://script.google.com/macros/s/AKfycbwXA1YBWRfOjYvZwDz9dkCr4HZujn9D_YoPmQyjggZxR5hUUs1ZsARytOX8rUR4zRbs/exec',
+      API_URL:'PASTE_YOUR_NEW_ANALYSIS_BACKEND_EXEC_URL_HERE',
       APP_NAME:'Analysis · Portfolio',CURRENCY:'INR',REQUEST_TIMEOUT_MS:60000,OWNERS:['Sarada','Niharika']
     };
   </script>

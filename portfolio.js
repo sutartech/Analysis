@@ -1,14 +1,14 @@
 'use strict';
 
 const CONFIG = window.PORTFOLIO_CONFIG || {};
-const APP_VERSION = '20.1.8';
-const EXPECTED_BACKEND_VERSION = '3.17.10';
+const APP_VERSION = '20.2.0';
+const EXPECTED_BACKEND_VERSION = '4.0.0';
 const HIDDEN_SECURITY_FALLBACK_MS = 5 * 60 * 1000;
 const SESSION_HEARTBEAT_MS = 2 * 60 * 1000;
 const ACTIVITY_WRITE_THROTTLE_MS = 10000;
 const LAST_ACTIVITY_KEY = 'myfinance_last_activity_at';
 const LAST_HIDDEN_KEY = 'myfinance_last_hidden_at';
-const APP_BUILD_ID = '20260909-20108-codingbook';
+const APP_BUILD_ID = '20261009-20200-analysis-separate';
 const APP_BUILD_STORAGE_KEY = 'myfinance_current_build_id';
 const AUTOMATIC_LOGIN_RECOVERY_KEY = `myfinance_login_recovery_${APP_BUILD_ID}`;
 const STARTUP_STUCK_MS = 30000;
@@ -401,7 +401,7 @@ async function waitForAsyncResult(requestId,timeoutMs){
   }
 
   if(lastError)throw lastError;
-  throw new Error('The backend did not return a result. Confirm Backend v3.17.10 is deployed and config.js uses the same /exec URL.');
+  throw new Error('The Analysis backend did not return a result. Check the new Analysis /exec URL in portfolio.html.');
 }
 function apiViaAsyncPost(action,payload={},options={}){
   if(!isConfigured())return Promise.reject(new Error('Backend is not configured. Check config.js.'));
@@ -658,6 +658,7 @@ function startQuickValueSync(){
 
 function overviewDefaultMode(){return 'INVESTMENT';}
 function setOverviewMode(mode,{saveDefault=false}={}){
+  mode='INVESTMENT';
   state.overviewMode=String(mode).toUpperCase()==='INVESTMENT'?'INVESTMENT':'PERSONAL';
   if(saveDefault)localStorage.setItem('portfolio_overview_default',state.overviewMode);
   const investment=state.overviewMode==='INVESTMENT';
@@ -1591,7 +1592,7 @@ async function loginWithAutomaticBrowserRecovery(username,password){
 async function login(event){
   event.preventDefault();
   if(els.loginMessage)els.loginMessage.textContent='';
-  if(!isConfigured()){if(els.loginMessage)els.loginMessage.textContent='Setup required: paste the Apps Script /exec URL into config.js.';return;}
+  if(!isConfigured()){if(els.loginMessage)els.loginMessage.textContent='Setup required: paste your separate Analysis Apps Script /exec URL into portfolio.html.';return;}
   setBusy(els.loginButton,true,'Signing in…');
   try{
     const result=await loginWithAutomaticBrowserRecovery(els.loginUsername.value.trim(),els.loginPassword.value);
@@ -7141,6 +7142,7 @@ function toggleDataFullscreen(section){
 }
 
 function switchSection(section){
+  if(['expenditure','diary','books','watchlist'].includes(section))section='overview';
   // Portfolio-only edition: do not show private household modules in Analysis.
   if(!['overview','holdings','transactions','sip'].includes(section))section='overview';
   if($('holdingsReadingHeader'))$('holdingsReadingHeader').hidden=true;
@@ -7655,7 +7657,7 @@ async function init(){
     startAutoRefresh();
 
     if(!isConfigured()){
-      if(els.loginMessage)els.loginMessage.textContent='Setup required: paste the Apps Script /exec URL into config.js.';
+      if(els.loginMessage)els.loginMessage.textContent='Setup required: paste your separate Analysis Apps Script /exec URL into portfolio.html.';
       return;
     }
 
