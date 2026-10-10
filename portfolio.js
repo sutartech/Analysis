@@ -1,8 +1,8 @@
 'use strict';
 
 const CONFIG = window.PORTFOLIO_CONFIG || {};
-const APP_VERSION = '20.2.0';
-const EXPECTED_BACKEND_VERSION = '4.0.0';
+const APP_VERSION = '20.2.1';
+const EXPECTED_BACKEND_VERSION = '4.1.1';
 const HIDDEN_SECURITY_FALLBACK_MS = 5 * 60 * 1000;
 const SESSION_HEARTBEAT_MS = 2 * 60 * 1000;
 const ACTIVITY_WRITE_THROTTLE_MS = 10000;
@@ -1592,7 +1592,7 @@ async function loginWithAutomaticBrowserRecovery(username,password){
 async function login(event){
   event.preventDefault();
   if(els.loginMessage)els.loginMessage.textContent='';
-  if(!isConfigured()){if(els.loginMessage)els.loginMessage.textContent='Setup required: paste your separate Analysis Apps Script /exec URL into portfolio.html.';return;}
+  if(!isConfigured()){if(els.loginMessage)els.loginMessage.textContent='Setup required: add your separate Analysis Apps Script /exec URL to index.html.';return;}
   setBusy(els.loginButton,true,'Signing in…');
   try{
     const result=await loginWithAutomaticBrowserRecovery(els.loginUsername.value.trim(),els.loginPassword.value);
@@ -1852,6 +1852,8 @@ function markPageVisible(){
 }
 
 function logout(){
+  try{sessionStorage.removeItem('analysis_market_user')}catch{}
+  const marketFrame=$('analysisMarketFrame');if(marketFrame)marketFrame.removeAttribute('src');
   // Mobile must feel immediate: never wait for a slow network request before leaving the dashboard.
   const token=state.token;
   clearSession();
@@ -1978,7 +1980,7 @@ async function loadPortfolioCore({startup=false,silent=false,forceShared=false}=
 
 function portfolioSectionFromHash(){
   const key=String(location.hash||'').replace(/^#/,'').trim().toLowerCase();
-  return ({investment:'overview',investments:'overview',holdings:'holdings',holding:'holdings',transactions:'transactions',transaction:'transactions',sip:'sip', 'sip-planner':'sip'})[key]||'overview';
+  return ({market:'market',analysis:'market',investment:'overview',investments:'overview',holdings:'holdings',holding:'holdings',transactions:'transactions',transaction:'transactions',sip:'sip','sip-planner':'sip'})[key]||'market';
 }
 function markPortfolioNav(section){
   const slug=section==='overview'?'investment':section;
@@ -7142,6 +7144,22 @@ function toggleDataFullscreen(section){
 }
 
 function switchSection(section){
+  if(section==='market'){
+    if(!state.token){ showLoggedOutUi(); return; }
+    state.activeSection='market';
+    document.body.classList.remove('section-overview','section-holdings','section-transactions','section-sip');
+    document.body.classList.add('section-market');
+    document.querySelectorAll('.page-section').forEach(node=>node.classList.toggle('hidden',node.id!=='marketSection'));
+    $$('[data-section]').forEach(node=>node.classList.toggle('active',node.dataset.section==='market'));
+    markPortfolioNav('market');
+    if(els.pageTitle)els.pageTitle.textContent='Market Analysis';
+    if(location.hash!=='#market')history.replaceState(null,'','#market');
+    try{sessionStorage.setItem('analysis_market_user',state.username)}catch{}
+    const frame=$('analysisMarketFrame');
+    if(frame && !frame.getAttribute('src'))frame.src='./market.html?integrated=1';
+    return;
+  }
+  $('marketSection')?.classList.add('hidden');
   if(['expenditure','diary','books','watchlist'].includes(section))section='overview';
   // Portfolio-only edition: do not show private household modules in Analysis.
   if(!['overview','holdings','transactions','sip'].includes(section))section='overview';
@@ -7426,6 +7444,11 @@ function clearRuntimeWarning(){
 }
 
 function bindEvents(){
+  safeOn(window,'message',event=>{
+    const frame=$('analysisMarketFrame');
+    if(!frame||event.origin!==location.origin||event.source!==frame.contentWindow||event.data?.type!=='analysis-market-activity')return;
+    if(state.token)setLastActivity();
+  });
   safeOn(document.getElementById('analysisAddInvestmentNav'),'click',()=>openInvestment());
   document.querySelectorAll('[data-portfolio-route]').forEach(button=>{
     safeOn(button,'click',()=>{
@@ -7657,7 +7680,7 @@ async function init(){
     startAutoRefresh();
 
     if(!isConfigured()){
-      if(els.loginMessage)els.loginMessage.textContent='Setup required: paste your separate Analysis Apps Script /exec URL into portfolio.html.';
+      if(els.loginMessage)els.loginMessage.textContent='Setup required: add your separate Analysis Apps Script /exec URL to index.html.';
       return;
     }
 
